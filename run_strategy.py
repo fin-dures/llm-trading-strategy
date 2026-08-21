@@ -36,8 +36,21 @@ if (
 # Run evaluator
 print("\nSending strategy to evaluator...")
 
+
+description_file = "strategies/strategy_descriptions.txt"
+strategy_id = strategy_file.split("/")[-1].replace(".py", "")
+
+description = "No description available."
+
+with open(description_file, "r") as f:
+    for line in f:
+        if line.startswith(strategy_id + ":"):
+            description = line.split(":", 1)[1].strip()
+            break
+
+
 result = subprocess.run(
-    ["python", "evaluate_strategy.py", strategy_file],
+    ["python", "evaluate_strategy.py", strategy_file, description],
     capture_output=True,
     text=True,
     check=True

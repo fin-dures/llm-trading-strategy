@@ -6,6 +6,7 @@ from openai import OpenAI
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 strategy_file = sys.argv[1]
+description = sys.argv[2]
 
 with open(strategy_file, "r") as f:
     strategy_code = f.read()
@@ -14,9 +15,9 @@ with open(strategy_file, "r") as f:
 
 
 instructions = """
-You are an independent reviewer of Python trading strategy code.
+You are an independent reviewer of Python Bitcoin trading strategy code.
 
-You MUST analyse the actual Python code provided in the next message.
+Analyse the ACTUAL CODE and its accompanying DESCRIPTION.
 
 Evaluate:
 
@@ -27,16 +28,22 @@ Evaluate:
 5. Overfitting risk
 6. Complexity
 7. Logical coherence
+8. Implementation correctness
 
-First identify the main pros and cons of the ACTUAL CODE.
+For implementation correctness, specifically check whether the Python
+code actually implements the strategy described in the DESCRIPTION.
 
-Then assign the four risk levels.
+Look for discrepancies between the description and implementation.
+
+Do not use backtest results when making your decision.
+
+First identify the main pros and cons.
+
+Then assess the risks.
 
 Finally decide PASS or FAIL.
 
-Do not assume that the code is missing.
-
-Return ONLY valid JSON in exactly this structure:
+Return ONLY valid JSON:
 
 {
     "pros": ["...", "..."],
@@ -45,14 +52,28 @@ Return ONLY valid JSON in exactly this structure:
     "data_leakage_risk": "LOW",
     "execution_risk": "LOW",
     "overfitting_risk": "LOW",
+    "implementation_risk": "LOW",
     "decision": "PASS"
 }
 """
 
+
+input_text = f"""
+DESCRIPTION:
+
+{description}
+
+
+CODE:
+
+{strategy_code}
+"""
+
+
 response = client.responses.create(
     model="gpt-5-mini",
     instructions=instructions,
-    input=strategy_code
+    input=input_text
 )
 
 result = json.loads(response.output_text)

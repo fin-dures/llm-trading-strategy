@@ -7,8 +7,13 @@ from openai import OpenAI
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 
-# Create strategies folder
-os.makedirs("strategies", exist_ok=True)
+description_file = "strategies/strategy_descriptions.txt"
+
+if os.path.exists(description_file):
+    with open(description_file, "r") as f:
+        previous_strategies = f.read()
+else:
+    previous_strategies = "No previous strategies."
 
 
 # Find next strategy number
@@ -23,10 +28,10 @@ strategy_id = f"{strategy_number:06d}"
 filename = f"strategies/strategy_{strategy_id}.py"
 
 
-prompt = """
+prompt = f"""
 Generate ONE novel Bitcoin trading strategy in Python.
 
-Use only these columns:
+Use only:
 - open
 - high
 - low
@@ -38,33 +43,46 @@ Requirements:
 - No future information
 - No look-ahead bias
 - Use pandas
-- The strategy must contain:
+- Return entries and exits through:
 
 class Strategy:
     def generate_signals(self, df):
         ...
         return entries, exits
 
-The strategy should be meaningfully different from a simple
-moving-average crossover.
+The strategy should be meaningfully different from the
+previous strategies listed below.
 
-Do not explain the strategy.
+PREVIOUS STRATEGIES:
+{previous_strategies}
 
-Return ONLY valid Python code.
+Return your response in exactly this format:
+
+DESCRIPTION:
+A concise 1-2 sentence description of the trading idea.
+
+CODE:
+<complete Python code>
+
+Do not include anything else.
 """
-
 
 response = client.responses.create(
     model="gpt-5-mini",
     input=prompt
 )
 
-code = response.output_text
+full_output = response.output_text
+description = full_output.split("CODE:", 1)[0]
+code = full_output.split("CODE:", 1)[1].strip()
 
 
 # Save strategy
 with open(filename, "w") as f:
     f.write(code)
+
+with open(description_file, "a") as f:
+    f.write(f"strategy_{strategy_id}: {description}\n")
 
 print(f"\nGenerated: {filename}")
 
@@ -74,3 +92,4 @@ subprocess.run(
     ["python", "run_strategy.py", filename],
     check=True
 )
+

@@ -1,0 +1,4 @@
+strategy_000006: DESCRIPTION:
+Breakout-with-squeeze strategy: enter long when price breaks above the recent high after a volatility "squeeze" (falling ATR) and accompanied by a volume spike; exit on ATR-based stop-loss, ATR-based profit target, channel breakdown, or maximum holding time.
+
+
