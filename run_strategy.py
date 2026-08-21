@@ -1,31 +1,16 @@
-from generated_strategy import Strategy
+import importlib.util
+import sys
 from backtester import backtest
-import json
-import subprocess
 
 
-# 1. Backtest
-strategy = Strategy()
+strategy_file = sys.argv[1]
+
+spec = importlib.util.spec_from_file_location("strategy", strategy_file)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+strategy = module.Strategy()
+
 results = backtest(strategy)
 
-print("\nBACKTEST RESULTS")
 print(results)
-
-
-# 2. Cheap filter
-if (
-    results["sharpe"] < 0.5
-    or results["max_drawdown"] > 50
-    or results["trades"] < 20
-):
-    print("\nStrategy rejected by basic backtest filter.")
-    exit()
-
-
-# 3. Run LLM evaluator
-print("\nSending strategy to evaluator...")
-
-subprocess.run(
-    ["python", "evaluate_strategy.py"],
-    check=True
-)
