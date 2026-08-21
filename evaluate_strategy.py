@@ -1,17 +1,22 @@
 import os
+import sys
 import json
 from openai import OpenAI
 
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
-with open("generated_strategy.py", "r") as f:
+strategy_file = sys.argv[1]
+
+with open(strategy_file, "r") as f:
     strategy_code = f.read()
 
-prompt = f"""
-You are an independent evaluator of an automatically generated Bitcoin
-trading strategy.
 
-Analyse the strategy objectively before making your final decision.
+
+
+instructions = """
+You are an independent reviewer of Python trading strategy code.
+
+You MUST analyse the actual Python code provided in the next message.
 
 Evaluate:
 
@@ -21,40 +26,35 @@ Evaluate:
 4. Signal logic
 5. Overfitting risk
 6. Complexity
-7. Whether the strategy is logically coherent
+7. Logical coherence
 
-First identify the main PROS and CONS.
+First identify the main pros and cons of the ACTUAL CODE.
 
-Then assess the risks.
+Then assign the four risk levels.
 
-Finally decide whether the strategy should PASS or FAIL.
+Finally decide PASS or FAIL.
 
-Do not rewrite or modify the strategy.
+Do not assume that the code is missing.
 
 Return ONLY valid JSON in exactly this structure:
 
-{{
+{
     "pros": ["...", "..."],
     "cons": ["...", "..."],
     "lookahead_risk": "LOW",
     "data_leakage_risk": "LOW",
     "execution_risk": "LOW",
     "overfitting_risk": "LOW",
-    "decision": "PASS",
-}}
-
-The decision should be based on the analysis above.
-
-STRATEGY CODE:
-
-{strategy_code}
+    "decision": "PASS"
+}
 """
 
 response = client.responses.create(
     model="gpt-5-mini",
-    input=prompt
+    instructions=instructions,
+    input=strategy_code
 )
 
 result = json.loads(response.output_text)
 
-print(json.dumps(result, indent=2))
+print(json.dumps(result))

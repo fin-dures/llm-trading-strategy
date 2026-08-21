@@ -1,12 +1,17 @@
 import os
+import subprocess
+
 from openai import OpenAI
 
+
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
 
 # Create strategies folder
 os.makedirs("strategies", exist_ok=True)
 
-# Find the next strategy number
+
+# Find next strategy number
 existing = [
     f for f in os.listdir("strategies")
     if f.startswith("strategy_") and f.endswith(".py")
@@ -14,6 +19,9 @@ existing = [
 
 strategy_number = len(existing) + 1
 strategy_id = f"{strategy_number:06d}"
+
+filename = f"strategies/strategy_{strategy_id}.py"
+
 
 prompt = """
 Generate ONE novel Bitcoin trading strategy in Python.
@@ -30,7 +38,7 @@ Requirements:
 - No future information
 - No look-ahead bias
 - Use pandas
-- The strategy must be contained in:
+- The strategy must contain:
 
 class Strategy:
     def generate_signals(self, df):
@@ -45,6 +53,7 @@ Do not explain the strategy.
 Return ONLY valid Python code.
 """
 
+
 response = client.responses.create(
     model="gpt-5-mini",
     input=prompt
@@ -52,9 +61,16 @@ response = client.responses.create(
 
 code = response.output_text
 
-filename = f"strategies/strategy_{strategy_id}.py"
 
+# Save strategy
 with open(filename, "w") as f:
     f.write(code)
 
-print(f"Generated: {filename}")
+print(f"\nGenerated: {filename}")
+
+
+# Run backtest + evaluator
+subprocess.run(
+    ["python", "run_strategy.py", filename],
+    check=True
+)
